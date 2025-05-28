@@ -1,45 +1,66 @@
-// Streamer.js
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
 
-function handler(request, response) {
-  if (request.url === "/stream") {
-    const dataPath = path.join(__dirname, "public", "data.txt");
-    const stream = fs.createReadStream(dataPath);
+function errResponse(response, statusCode, contentType, message) {
+  response.statusCode = statusCode;
+  response.setHeader("Content-Type", contentType);
+  response.end(message);
+}
 
-    response.setHeader("Content-Type", "text/plain");
-    stream.pipe(response);
+function renderFile(response, filePath, contentType) {
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      errResponse(response, 500, contentType, err.message);
+    } else {
+      response.statusCode = 200;
+      response.setHeader("Content-Type", contentType);
+      response.end(content);
+    }
+  });
+}
 
-    stream.on("error", (err) => {
-      response.statusCode = 500;
-      response.end("Internal Server Error");
-      console.error(err);
-    });
-  } else if (request.url === "/home") {
-    const filePath = path.join(__dirname, "public", "index.html");
-    console.log(`Serving file: ${filePath}`);
+function streamFile(response, filePath, contentType) {
+  const stream = fs.createReadStream(filePath);
+  response.setHeader("Content-Type", contentType);
+  stream.pipe(response);
+  stream.on("error", (err) => {
+    errResponse(response, 500, contentType, err.message);
+  });
+}
 
-    fs.readFile(filePath, (err, content) => {
-      if (err) {
-        response.statusCode = 500;
-        response.setHeader("Content-Type", "text/plain");
-        response.end("Server error.");
-      } else {
-        response.statusCode = 200;
-        response.setHeader("Content-Type", "text/html");
-        response.end(content);
-      }
-    });
-  } else {
-    response.statusCode = 404;
-    response.end("Not Found");
+function genericHandler(response, fileSourceName, style) {
+  const filePath = path.join(__dirname, "public", fileSourceName);
+  const contentType = style === "static" ? "text/html" : "text/plain";
+  console.log(`Serving file: ${filePath}`);
+  if (style === "static") {
+    renderFile(response, filePath, contentType);
+  } else if (style === "stream") {
+    streamFile(response, filePath, contentType);
   }
 }
 
-exports.handler = handler;
+function router(request, response) {
+  if (request.url === "/") {
+    response.statusCode = 302;
+    response.setHeader("Location", "/home");
+    response.end();
+    return;
+  }
+  if (request.url === "/stream") {
+    genericHandler(response, "data.txt", "stream");
+  } else if (request.url === "/home") {
+    genericHandler(response, "index.html", "static");
+  } else {
+    response.statusCode = 404;
+    response.end("Resource Not Found");
+  }
+}
 
-const server = http.createServer(handler);
+exports.handler = router;
+exports.htmlHandler = genericHandler;
+
+const server = http.createServer(router);
 exports.server = server;
 
 if (require.main === module) {
