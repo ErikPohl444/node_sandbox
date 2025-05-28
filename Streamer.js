@@ -1,11 +1,11 @@
+// Streamer.js
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
 
-const server = http.createServer((request, response) => {
+function handler(request, response) {
   if (request.url === "/stream") {
     const dataPath = path.join(__dirname, "public", "data.txt");
-
     const stream = fs.createReadStream(dataPath);
 
     response.setHeader("Content-Type", "text/plain");
@@ -35,8 +35,15 @@ const server = http.createServer((request, response) => {
     response.statusCode = 404;
     response.end("Not Found");
   }
-});
+}
 
-server.listen(3000, () => {
-  console.log("Server listening on port 3000");
-});
+exports.handler = handler;
+
+const server = http.createServer(handler);
+exports.server = server;
+
+if (require.main === module) {
+  server.listen(3000, () => {
+    console.log("Server listening on port 3000");
+  });
+}
