@@ -68,3 +68,5 @@ if (require.main === module) {
     console.log("Server listening on port 3000");
   });
 }
+
+exports.renderFile = renderFile;
