@@ -3,7 +3,6 @@ const http = require("http");
 const path = require("path");
 const Streamer = module.exports;
 
-
 /**
  * Yield a simple error response.
  * @param {http.ServerResponse} response The first number.
@@ -61,8 +60,8 @@ function streamFile(response, filePath, contentType) {
  * @returns {void}
  */
 function genericHandler(response, fileSourceName, style) {
-const filePath = path.join(process.cwd(), "public", fileSourceName);  
-const contentType = style === "static" ? "text/html" : "text/plain";
+  const filePath = path.join(process.cwd(), "public", fileSourceName);
+  const contentType = style === "static" ? "text/html" : "text/plain";
   console.log(`Serving file: ${filePath}`);
   if (style === "static") {
     Streamer.renderFile(response, filePath, contentType);
