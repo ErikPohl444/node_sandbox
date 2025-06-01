@@ -1,13 +1,15 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const Streamer = module.exports;
+
 
 /**
- * Yield a simple error response. 
+ * Yield a simple error response.
  * @param {http.ServerResponse} response The first number.
  * @param {number} statusCode The error status code.
  * @param {string} contentType The content type of the response.
- * @param {string} message The error message to send in the response. 
+ * @param {string} message The error message to send in the response.
  * @returns {void}
  */
 function errResponse(response, statusCode, contentType, message) {
@@ -17,7 +19,7 @@ function errResponse(response, statusCode, contentType, message) {
 }
 
 /**
- * Render a file as a response in a single unstreaming result. 
+ * Render a file as a response in a single unstreaming result.
  * @param {http.ServerResponse} response The response object.
  * @param {string} filePath The path to the file to render.
  * @param {string} contentType The content type of the file.
@@ -36,10 +38,10 @@ function renderFile(response, filePath, contentType) {
 }
 
 /**
- * Render a file as a response in a stream. 
+ * Render a file as a response in a stream.
  * @param {http.ServerResponse} response The response object.
  * @param {string} filePath The path to the file to stream.
- * @param {string} contentType The content type of the file.  
+ * @param {string} contentType The content type of the file.
  * @returns {void}
  */
 function streamFile(response, filePath, contentType) {
@@ -52,27 +54,27 @@ function streamFile(response, filePath, contentType) {
 }
 
 /**
- * Generic handler to serve files based on the style (static or stream). 
+ * Generic handler to serve files based on the style (static or stream).
  * @param {http.ServerResponse} response The response object.
  * @param {string} fileSourceName The name of the file to serve.
- * @param {string} style The style of serving the file, either "static" or "stream". 
+ * @param {string} style The style of serving the file, either "static" or "stream".
  * @returns {void}
  */
 function genericHandler(response, fileSourceName, style) {
-  const filePath = path.join(__dirname, "public", fileSourceName);
-  const contentType = style === "static" ? "text/html" : "text/plain";
+const filePath = path.join(process.cwd(), "public", fileSourceName);  
+const contentType = style === "static" ? "text/html" : "text/plain";
   console.log(`Serving file: ${filePath}`);
   if (style === "static") {
-    renderFile(response, filePath, contentType);
+    Streamer.renderFile(response, filePath, contentType);
   } else if (style === "stream") {
-    streamFile(response, filePath, contentType);
+    Streamer.streamFile(response, filePath, contentType);
   }
 }
 
 /**
  * Router function to handle incoming requests and serve files.
  * @param {http.ServerResponse} response The response object.
- * @param {http.IncomingMessage} request The incoming request object. 
+ * @param {http.IncomingMessage} request The incoming request object.
  * @returns {void}
  */
 function router(request, response) {
@@ -92,17 +94,17 @@ function router(request, response) {
   }
 }
 
-exports.handler = router;
-exports.htmlHandler = genericHandler;
-
 const server = http.createServer(router);
-exports.server = server;
 
-// If this module is run directly, start the server.  
+// If this module is run directly, start the server.
 if (require.main === module) {
   server.listen(3000, () => {
     console.log("Server listening on port 3000");
   });
 }
 
+exports.server = server;
+exports.router = router;
+exports.genericHandler = genericHandler;
 exports.renderFile = renderFile;
+exports.streamFile = streamFile;
