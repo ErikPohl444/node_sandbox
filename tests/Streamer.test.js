@@ -5,7 +5,6 @@ const Streamer = require("../Streamer");
 
 // Test cases for the renderFile function
 describe("renderFile", () => {
-
   let response;
 
   // Mock response object
@@ -129,5 +128,3 @@ describe("router", () => {
     expect(response.end).toHaveBeenCalledWith("Resource Not Found");
   });
 });
-
-
