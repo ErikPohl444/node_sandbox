@@ -2,6 +2,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const Streamer = module.exports;
+const { requireAuth } = require("./authMiddleware");
 
 /**
  * Yield a simple error response.
@@ -70,6 +71,25 @@ function genericHandler(response, fileSourceName, style) {
   }
 }
 
+function handleLogin(request, response) {
+  let body = "";
+  request.on("data", (chunk) => {
+    body += chunk;
+  });
+  request.on("end", () => {
+    const { apiKey } = JSON.parse(body);
+    if (apiKey === "expected-api-key") {
+      const token = sign({ apiKey });
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({ token }));
+    } else {
+      response.statusCode = 403;
+      response.end("Invalid API key");
+    }
+  });
+  return;
+}
+
 /**
  * Router function to handle incoming requests and serve files.
  * @param {http.ServerResponse} response The response object.
@@ -84,9 +104,13 @@ function router(request, response) {
     return;
   }
   if (request.url === "/stream") {
+    if (!requireAuth(request, response)) return;
     genericHandler(response, "data.txt", "stream");
   } else if (request.url === "/home") {
+    if (!requireAuth(request, response)) return;
     genericHandler(response, "index.html", "static");
+  } else if (request.url === "/login" && request.method === "POST") {
+    handleLogin(request, response);
   } else {
     response.statusCode = 404;
     response.end("Resource Not Found");
